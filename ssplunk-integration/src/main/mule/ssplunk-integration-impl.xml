@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:crypto="http://www.mulesoft.org/schema/mule/crypto" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/crypto http://www.mulesoft.org/schema/mule/crypto/current/mule-crypto.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="71e63cd0-35a9-46da-a5e8-6e433c8c4c08" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="root" database="mule" />
+	</db:config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="51d80765-2b06-48f9-9bb6-c55680d09373" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="ssplunk-integration-implFlow" doc:id="6bc53022-7e26-4fcd-a875-231b8f19cbff" >
+		<http:listener doc:name="Listener" doc:id="771a7926-f780-4f87-98c2-76f84f32535d" config-ref="HTTP_Listener_config" path="/employee/{empid}" allowedMethods="GET"/>
+		<logger level="DEBUG" doc:name="empID" doc:id="538c4c62-7dcf-4f33-987d-6a3cdb869b23" message="Requested empID : #[attributes.uriParams.empid]" category="splunk.logger.debug"/>
+		<logger level="WARN" doc:name="DB request" doc:id="04f394dd-7f5d-44d3-8938-d3e959bbbb39" message="Requesting to DB to fetch the data" category="splunk.logger.warn" />
+		<db:select doc:id="2c2aaf7a-0e0b-474c-a766-660420b334d1" config-ref="Database_Config" doc:name="Select" >
+			<db:sql ><![CDATA[select * from employee where empid = :empid]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{'empid':attributes.uriParams.empid}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="java to json" doc:id="f9686bfa-ef84-4418-ad38-4d78d97b412d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="c468bea7-0b22-49dc-9b60-54cc2405f794" message='#["No records found. please check the employee ID which you have provided"]'>
+			<error-mapping sourceType="VALIDATION:EMPTY_COLLECTION" targetType="APP:NO_RECORDS" />
+		</validation:is-not-empty-collection>
+		<logger level="INFO" doc:name="finalOutput" doc:id="e28020c2-2f6b-4abd-9c15-fbbba67d3268" message="#[payload]"/>
+		<logger level="INFO" doc:name="LogFinalOutput" doc:id="48bfe9ec-0757-4fdc-ad00-2251e65bfd44" message="#[payload]" category="splunk.logger.info"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="fd922844-94d4-4db2-abe6-5cf40d666fc2" type="APP:NO_RECORDS">
+				<ee:transform doc:name="Transform Message" doc:id="286b9da3-2739-49b0-9f58-d247e141eba6" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message : "No records found. please check the employee ID which you have provided"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="ERROR" doc:name="errorOutput" doc:id="b9061c87-e216-48d1-94c0-28ed2dd0c415" message="#[payload]" category="splunk.logger.error" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>
