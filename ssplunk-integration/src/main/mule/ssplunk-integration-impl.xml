@@ -30,6 +30,7 @@ output application/json
 payload]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+		<logger level="INFO" doc:name="payload" doc:id="328b35a9-ec0c-48ed-9ac8-7ffb13c52594" message="#[payload]"/>
 		<validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="c468bea7-0b22-49dc-9b60-54cc2405f794" message='#["No records found. please check the employee ID which you have provided"]'>
 			<error-mapping sourceType="VALIDATION:EMPTY_COLLECTION" targetType="APP:NO_RECORDS" />
 		</validation:is-not-empty-collection>
