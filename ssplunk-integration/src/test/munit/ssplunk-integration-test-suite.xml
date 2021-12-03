@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xsi:schemaLocation="
+		http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd">
+	<munit:config name="ssplunk-integration-test-suite.xml" />
+	<munit:test name="ssplunk-integration-success-test" doc:id="0c8e7c18-0e81-4363-a945-38a15f4b82b8" >
+		<munit:behavior >
+			<munit:set-event doc:name="Set Input" doc:id="454179ba-956d-47a4-a603-8c65576ff964" >
+				<munit:payload value="#[readUrl('classpath://ssplunkintegrationsuccesstest\set-event_payload.dwl')]" encoding="UTF-8" />
+				<munit:attributes value="#[readUrl('classpath://ssplunkintegrationsuccesstest\set-event_attributes.dwl')]" />
+			</munit:set-event>
+		</munit:behavior>
+		<munit:execution >
+			<flow-ref doc:name="Flow-ref to ssplunk-integration-implFlow" doc:id="3a759dc3-bda8-428b-a7f0-21308be1abb1" name="ssplunk-integration-implFlow"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert doc:name="Assert payload" doc:id="e004988d-8b85-46f8-8ce6-2455bd9f3125" message="The payload does not match">
+				<munit-tools:that ><![CDATA[#[%dw 2.0
+import ssplunkintegrationsuccesstest::assert_expression_payload
+---
+assert_expression_payload::main({payload: payload, attributes: attributes, vars: vars})]]]></munit-tools:that>
+			</munit-tools:assert>
+		</munit:validation>
+	</munit:test>
+	
+	
+	
+	
+	<munit:test name="ssplunk-integration-error-test" doc:id="858d0765-3378-4520-9945-fc2cfc26bc5c" >
+		<munit:behavior >
+			<munit:set-event doc:name="Set Input" doc:id="7d630fb3-fe57-45e0-a40f-f92008a671ed" >
+				<munit:payload value="#[readUrl('classpath://ssplunkintegrationsuccesstest\set-event_error_attributes.dwl')]" encoding="UTF-8" />
+				<munit:attributes value="#[readUrl('classpath://ssplunkintegrationsuccesstest\set-event_error_attributes.dwl')]" />
+			
+</munit:set-event>
+		</munit:behavior>
+		<munit:execution>
+			<try doc:name="Try" doc:id="d179ec12-67ab-4b13-aab0-7e86cbddf1f0" >
+				<flow-ref doc:name="Flow-ref to ssplunk-integration-implFlow" doc:id="dd9c6bc5-2377-4e01-ab00-d3d306f4a543" name="ssplunk-integration-implFlow" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="69f6d122-35c0-4151-8f23-a87aa867fd9c" >
+						<logger level="INFO" doc:name="Logger" doc:id="21d139c3-b9dc-41ef-964b-b3421b5ca621" message="#[payload.error]"/>
+					</on-error-continue>
+				</error-handler>
+			</try>
+
+		</munit:execution>
+		<munit:validation>
+			<munit-tools:assert-that doc:name="Assert that" doc:id="1745627c-f117-4504-956b-9986e07e5744" is="#[MunitTools::equalTo('No records found. please check the employee ID which you have provided')]" expression='#[payload.message]'/>
+
+		</munit:validation>
+	
+</munit:test>
+
+
+</mule>

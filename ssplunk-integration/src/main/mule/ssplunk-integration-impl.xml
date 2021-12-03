@@ -15,7 +15,11 @@ http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mu
 		<http:listener-connection host="0.0.0.0" port="8081" />
 	</http:listener-config>
 	<flow name="ssplunk-integration-implFlow" doc:id="6bc53022-7e26-4fcd-a875-231b8f19cbff" >
-		<http:listener doc:name="Listener" doc:id="771a7926-f780-4f87-98c2-76f84f32535d" config-ref="HTTP_Listener_config" path="/employee/{empid}" allowedMethods="GET"/>
+		<http:listener doc:name="Listener" doc:id="771a7926-f780-4f87-98c2-76f84f32535d" config-ref="HTTP_Listener_config" path="/employee/{empid}" allowedMethods="GET">
+			<http:error-response >
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
 		<logger level="DEBUG" doc:name="empID" doc:id="538c4c62-7dcf-4f33-987d-6a3cdb869b23" message="Requested empID : #[attributes.uriParams.empid]" category="splunk.logger.debug"/>
 		<logger level="WARN" doc:name="DB request" doc:id="04f394dd-7f5d-44d3-8938-d3e959bbbb39" message="Requesting to DB to fetch the data" category="splunk.logger.warn" />
 		<db:select doc:id="2c2aaf7a-0e0b-474c-a766-660420b334d1" config-ref="Database_Config" doc:name="Select" >
